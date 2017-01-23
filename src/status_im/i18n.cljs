@@ -85,6 +85,9 @@
     (.p i18n count (name path) (clj->js options))
     (name path)))
 
+(defn label-number [number]
+  (.toNumber i18n number (clj->js {:precision 10 :strip_insignificant_zeros true})))
+
 (defn message-status-label [status]
   (->> status
        (name)

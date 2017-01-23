@@ -11,7 +11,7 @@
             [status-im.components.styles :refer [icon-ok
                                                  icon-close]]
             [status-im.transactions.styles :as st]
-            [status-im.i18n :refer [label label-pluralize]]))
+            [status-im.i18n :refer [label label-pluralize label-number]]))
 
 (defn title-bar [title id]
   [view st/title-bar
@@ -36,10 +36,10 @@
 (defview transaction-page [{:keys [id from to value] :as transaction}]
   [{:keys [name] :as contact} [:contact-by-address to]]
   (let [eth-value         (.fromWei js/Web3.prototype value "ether")
-        title             (str eth-value " ETH to " (or name to))
+        title             (str (label-number eth-value) " ETH to " (or name to))
         transactions-info [[(label :t/status) (label :t/pending-confirmation)]
                            [(label :t/recipient) (or name to)]
-                           [(label :t/value) (str eth-value " ETH")]]]
+                           [(label :t/value) (str (label-number eth-value) " ETH")]]]
     [view {:style st/transaction-page
            :key   id}
      [title-bar title id]
