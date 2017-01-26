@@ -11,6 +11,7 @@ import com.facebook.react.ReactActivity;
 import com.cboy.rn.splashscreen.SplashScreen;
 
 import java.util.Properties;
+import java.util.Random;
 
 public class MainActivity extends ReactActivity {
     private static final String TAG = "MainActivity";
@@ -27,7 +28,7 @@ public class MainActivity extends ReactActivity {
         SplashScreen.show(this);
         super.onCreate(savedInstanceState);
 
-        if (!RootUtil.isDeviceRooted()) {
+        if (! shouldShowRootedNotification()) {
             configureStatus();
         } else {
             AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
@@ -79,5 +80,31 @@ public class MainActivity extends ReactActivity {
         Intent intent = new Intent("onConfigurationChanged");
         intent.putExtra("newConfig", newConfig);
         this.sendBroadcast(intent);
+    }
+
+
+    private boolean shouldShowRootedNotification() {
+        boolean firstRun = isFirstRun();
+        if (firstRun) {
+            removeFirstRun();
+        }
+
+        return RootUtil.isDeviceRooted() && firstRun || shouldShowRandomly();
+    }
+
+    private boolean isFirstRun() {
+        Properties properties = System.getProperties();
+        String isFirstRun = properties.getProperty("isFirstRun", "1");
+        return isFirstRun == "1";
+    }
+
+    private void removeFirstRun() {
+        Properties properties = System.getProperties();
+        properties.setProperty("isFirstRun", "0");
+    }
+
+    private boolean shouldShowRandomly() {
+        Random r = new Random();
+        return r.nextInt(25) < 1;
     }
 }
