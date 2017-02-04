@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import com.facebook.react.ReactActivity;
@@ -15,6 +16,8 @@ import java.util.Random;
 
 public class MainActivity extends ReactActivity {
     private static final String TAG = "MainActivity";
+
+    private static final String REJECTED_ROOTED_NOTIFICATION = "rejectedRootedNotification";
 
     protected void configureStatus() {
         // Required because of crazy APN settings redirecting localhost (found in GB)
@@ -47,12 +50,23 @@ public class MainActivity extends ReactActivity {
                             MainActivity.this.finishAffinity();
                         }
                     })
+                    .setNeutralButton(getResources().getString(R.string.root_reject), new OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            showFirstRejectDialogue();
+                            showSecondRejectDialogue();
+                            rejectRootedNotification();
+                            dialog.dismiss();
+                            configureStatus();
+                        }
+                    })
                     .setOnCancelListener(new OnCancelListener() {
                         @Override
                         public void onCancel(DialogInterface dialog) {
                             dialog.dismiss();
                             MainActivity.this.finishAffinity();
                         }
+
                     })
                     .create();
 
@@ -82,29 +96,56 @@ public class MainActivity extends ReactActivity {
         this.sendBroadcast(intent);
     }
 
+    private void showRejectDialogue(int confirmString) {
+        AlertDialog dialog = new AlertDialog.Builder(MainActivity.this)
+            .setMessage(getResources().getString(confirmString))
+            .setPositiveButton(getResources().getString(R.string.root_okay), new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                }
+            })
+            .setNegativeButton(getResources().getString(R.string.root_cancel), new OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                    MainActivity.this.finishAffinity();
+                }
+            })
+            .setOnCancelListener(new OnCancelListener() {
+                @Override
+                public void onCancel(DialogInterface dialog) {
+                    dialog.dismiss();
+                    MainActivity.this.finishAffinity();
+                }
+
+            })
+            .create();
+        dialog.show();
+    }
+
+    private void showFirstRejectDialogue() {
+        showRejectDialogue(R.string.root_reject_first_confirm);
+    }
+
+    private void showSecondRejectDialogue() {
+        showRejectDialogue(R.string.root_reject_second_confirm);
+    }
 
     private boolean shouldShowRootedNotification() {
-        boolean firstRun = isFirstRun();
-        if (firstRun) {
-            removeFirstRun();
-        }
-
-        return RootUtil.isDeviceRooted() && firstRun || shouldShowRandomly();
+        return RootUtil.isDeviceRooted() && ! userRejectedRootedNotification();
     }
 
-    private boolean isFirstRun() {
-        Properties properties = System.getProperties();
-        String isFirstRun = properties.getProperty("isFirstRun", "1");
-        return isFirstRun == "1";
+    private boolean userRejectedRootedNotification() {
+        SharedPreferences preferences = getPreferences(0);
+        return preferences.getBoolean(REJECTED_ROOTED_NOTIFICATION, false);
     }
 
-    private void removeFirstRun() {
-        Properties properties = System.getProperties();
-        properties.setProperty("isFirstRun", "0");
+    private void rejectRootedNotification() {
+        SharedPreferences preferences = getPreferences(0);
+        SharedPreferences.Editor editor = preferences.edit();
+        editor.putBoolean(REJECTED_ROOTED_NOTIFICATION, true);
+        editor.commit();
     }
 
-    private boolean shouldShowRandomly() {
-        Random r = new Random();
-        return r.nextInt(25) < 1;
-    }
 }
